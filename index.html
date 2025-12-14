@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>星云情绪卡片 V5.0 - 两段式交互</title>
+    <title>星云情绪卡片 V6.0 - 终极交互修复版</title>
     <style>
-        /* --- 基础环境设定 --- */
+        /* --- 基础环境 --- */
         body {
             margin: 0;
             background-color: #000000;
@@ -15,54 +15,49 @@
         }
         #container { width: 100%; height: 100vh; }
 
-        /* --- 卡片核心样式 --- */
+        /* --- 卡片样式 --- */
         .element {
             width: 160px; height: 80px;
             font-weight: bold; color: #ffffff; text-shadow: 0 0 5px rgba(0,0,0,0.5);
             text-align: center; line-height: 80px; font-size: 20px;
             cursor: pointer; border-radius: 8px; user-select: none;
-            /* 开启3D变换保留，为翻转做准备 */
+            /* 关键：保留3D空间，同时允许被 JS 强制覆盖 */
             transform-style: preserve-3d;
             will-change: transform, opacity, box-shadow;
-            /* 基础过渡时间 */
-            transition: all 0.5s ease-out;
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1); /* 这种缓动更高级 */
             
-            /* 动态颜色变量 */
             background: var(--bg-color); border: 1px solid var(--border-color);
-            box-shadow: 0 0 15px var(--glow-color); pointer-events: auto;
+            box-shadow: 0 0 15px var(--glow-color); 
+            pointer-events: auto; /* 确保接收鼠标事件 */
         }
 
-        /* 景深效果 (仅当没有卡片居中时生效) */
+        /* 景深变暗 (仅当没有卡片居中时) */
         body.has-hover:not(.has-centered) .element {
-            opacity: 0.1; filter: blur(4px); transform: scale(0.9);
+            opacity: 0.15; filter: blur(4px); transform: scale(0.9);
         }
-        /* 悬停高亮 (仅当没有卡片居中时生效) */
+        /* 悬停高亮 */
         body.has-hover:not(.has-centered) .element:hover {
             opacity: 1; filter: blur(0); transform: scale(1.3); z-index: 9999;
             background: var(--main-color); border-color: #fff; color: #000; text-shadow: none;
             box-shadow: 0 0 60px var(--main-color), inset 0 0 20px rgba(255,255,255,0.5);
         }
 
-        /* --- V5.0 新增：第一阶段 - 居中翻转状态 --- */
+        /* --- 核心：居中翻转状态 --- */
+        /* 使用 !important 强制覆盖 CSS3DRenderer 的 inline 样式 */
         .element.is-centered {
-            /* 核心Trick：使用 fixed 强制脱离 Three.js 的 3D 控制 */
-            position: fixed !important;
+            position: fixed !important; /* 脱离文档流 */
             top: 50% !important; left: 50% !important;
-            /* 居中定位 + 放大2.5倍 + 翻转一圈(360deg) */
+            /* 放大2.5倍 + 翻转360度 + 居中 */
             transform: translate(-50%, -50%) scale(2.5) rotateY(360deg) !important;
-            z-index: 20000 !important; /* 层级极高 */
+            z-index: 20000 !important;
             
-            /* 覆盖默认样式，确保居中时是高亮状态 */
             opacity: 1 !important; filter: blur(0) !important;
             background: var(--main-color) !important;
             border-color: #fff !important; color: #000 !important; text-shadow: none !important;
             box-shadow: 0 0 100px var(--main-color), inset 0 0 40px rgba(255,255,255,0.8) !important;
-            
-            /* 缓慢而有弹性的过渡动画 */
-            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
         }
 
-        /* --- 第二阶段 - 抖动与破碎 --- */
+        /* --- 破碎动画 --- */
         @keyframes shake-hard {
             0% { transform: translate(-50%, -50%) scale(2.5) rotate(0deg); }
             25% { transform: translate(-52%, -52%) scale(2.5) rotate(-3deg); }
@@ -70,21 +65,26 @@
             75% { transform: translate(-52%, -48%) scale(2.5) rotate(-3deg); }
             100% { transform: translate(-50%, -50%) scale(2.5) rotate(0deg); }
         }
-        /* 抖动时需要保持居中状态的基础 transform */
         .element.is-centered.shaking {
             animation: shake-hard 0.3s infinite;
             background: #fff !important; color: #000 !important;
-            box-shadow: 0 0 120px #fff !important;
+            box-shadow: 0 0 150px #fff !important;
         }
         .element.exploded {
             opacity: 0 !important; 
-            /* 破碎时继续放大并模糊 */
-            transform: translate(-50%, -50%) scale(5) !important;
-            filter: blur(30px) !important; pointer-events: none;
+            transform: translate(-50%, -50%) scale(6) !important; /* 爆炸范围更大 */
+            filter: blur(50px) !important; pointer-events: none;
             transition: all 0.6s ease-out !important;
         }
 
-        /* --- 弹窗样式 (保持不变) --- */
+        /* --- 遮罩层 (点击背景退出聚焦) --- */
+        #backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 10000;
+            display: none; opacity: 0; transition: opacity 0.5s;
+        }
+
+        /* --- 弹窗 (不变) --- */
         #modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.92); backdrop-filter: blur(15px);
@@ -111,8 +111,7 @@
 <body>
 
     <div id="container"></div>
-
-    <div id="modal-overlay">
+    <div id="backdrop"></div> <div id="modal-overlay">
         <div id="modal-content">
             <h2 id="modal-title">标题</h2>
             <p id="modal-text">内容加载中...</p>
@@ -146,7 +145,6 @@
         for(let i=0; i<120; i++) table.push(baseWords[i % baseWords.length]);
 
         let camera, scene, renderer, controls;
-        // 用于记录当前是否已经有卡片被聚焦了
         let activeCard = null; 
 
         init();
@@ -154,6 +152,7 @@
 
         function init() {
             const container = document.getElementById('container');
+            const backdrop = document.getElementById('backdrop');
             const body = document.body;
 
             camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
@@ -173,33 +172,38 @@
                 element.style.setProperty('--glow-color', `${color}, 0.4)`);
                 element.textContent = table[i];
 
-                // --- 事件监听 ---
-                element.addEventListener('mouseenter', () => {
-                    // 只有在没有卡片居中时，才触发景深
-                    if (!activeCard) body.classList.add('has-hover');
+                // --- 修复交互：防抖动点击算法 ---
+                let startX, startY;
+                
+                // 1. 鼠标按下时记录坐标
+                element.addEventListener('pointerdown', (e) => {
+                    startX = e.clientX;
+                    startY = e.clientY;
                 });
-                element.addEventListener('mouseleave', () => body.classList.remove('has-hover'));
 
-                // --- 核心交互逻辑 V5.0 ---
-                element.addEventListener('click', function(e) {
-                    // 防止在动画过程中重复点击
-                    if(element.classList.contains('shaking') || element.classList.contains('exploded')) return;
-
-                    // 【判断状态】
+                // 2. 鼠标抬起时，计算移动距离。如果小于5像素，才算点击！
+                // 这彻底解决了 "点不动" 的问题
+                element.addEventListener('pointerup', (e) => {
+                    const diffX = Math.abs(e.clientX - startX);
+                    const diffY = Math.abs(e.clientY - startY);
                     
-                    // 状态 B：如果这张卡片已经是居中状态 -> 执行第二阶段（破碎弹窗）
-                    if (element.classList.contains('is-centered')) {
-                        console.log("第二阶段点击：触发破碎");
-                        triggerExplosion(element, table[i]);
-                    } 
-                    // 状态 A：如果这张卡片在球体上 -> 执行第一阶段（居中翻转）
-                    else {
-                        console.log("第一阶段点击：执行居中翻转");
-                        // 如果此时有其他卡片居中了，先把那个卡片放回去
-                        if (activeCard && activeCard !== element) {
-                           resetActiveCard();
-                        }
-                        focusCard(element);
+                    if (diffX < 5 && diffY < 5) {
+                        // 这是一个有效的点击！
+                        handleCardClick(element, table[i]);
+                    }
+                });
+
+                // 3. 悬停优化：鼠标放上去时，立刻暂停球体旋转，方便点击
+                element.addEventListener('mouseenter', () => {
+                    if (!activeCard) {
+                        body.classList.add('has-hover');
+                        controls.autoRotate = false; // 暂停旋转
+                    }
+                });
+                element.addEventListener('mouseleave', () => {
+                    if (!activeCard) {
+                        body.classList.remove('has-hover');
+                        controls.autoRotate = true; // 恢复旋转
                     }
                 });
 
@@ -223,34 +227,70 @@
             controls.rotateSpeed = 0.5;
             controls.autoRotate = true;
             controls.autoRotateSpeed = 0.5;
+
+            // 点击背景（黑色遮罩）时，复原卡片
+            backdrop.addEventListener('click', () => {
+                if(activeCard) resetActiveCard();
+            });
             
             window.addEventListener('resize', onWindowResize);
         }
 
-        // --- 功能函数 ---
+        // --- 核心逻辑处理 ---
 
-        // 第一阶段：聚焦卡片
+        function handleCardClick(element, title) {
+            // 如果卡片正在破碎中，忽略点击
+            if(element.classList.contains('shaking') || element.classList.contains('exploded')) return;
+
+            // 逻辑分支：
+            if (element.classList.contains('is-centered')) {
+                // 情况A：卡片已经在中间了 -> 执行破碎弹窗
+                console.log("触发破碎");
+                triggerExplosion(element, title);
+            } else {
+                // 情况B：卡片还在球体上 -> 执行居中翻转
+                console.log("触发居中");
+                // 如果有别的卡片在中间，先把它放回去
+                if (activeCard && activeCard !== element) resetActiveCard();
+                focusCard(element);
+            }
+        }
+
         function focusCard(element) {
             activeCard = element;
-            document.body.classList.add('has-centered'); // 告诉 body 现在有卡片居中了
+            document.body.classList.add('has-centered'); // 锁定背景景深
             
-            // 添加居中类名，触发 CSS 翻转动画
+            // 显示遮罩层
+            const backdrop = document.getElementById('backdrop');
+            backdrop.style.display = 'block';
+            setTimeout(() => backdrop.style.opacity = '1', 10);
+
+            // 添加类名触发 CSS 动画
             element.classList.add('is-centered');
             
-            // 暂停背景球体的自动旋转，让视觉聚焦
+            // 彻底禁止控制器，防止用户在阅读卡片时还能拖动背景
+            controls.enableRotate = false;
             controls.autoRotate = false;
         }
 
-        // 重置当前聚焦的卡片（把它放回球体）
         function resetActiveCard() {
             if (!activeCard) return;
+            
+            // 隐藏遮罩层
+            const backdrop = document.getElementById('backdrop');
+            backdrop.style.opacity = '0';
+            setTimeout(() => backdrop.style.display = 'none', 500);
+
             activeCard.classList.remove('is-centered');
             activeCard = null;
+            
             document.body.classList.remove('has-centered');
-            controls.autoRotate = true; // 恢复球体旋转
+            
+            // 恢复控制器
+            controls.enableRotate = true;
+            controls.autoRotate = true;
         }
 
-        // 第二阶段：触发破碎和弹窗
         function triggerExplosion(element, title) {
             const modalColor = element.style.getPropertyValue('--main-color');
             document.getElementById('modal-content').style.setProperty('--modal-color', modalColor);
@@ -264,14 +304,11 @@
                 setTimeout(() => {
                     showModal(title);
                     
-                    // 绑定关闭按钮事件
                     document.getElementById('modal-close').onclick = function() {
                         closeModal();
-                        // 弹窗关闭后，彻底重置这张卡片的状态
                         setTimeout(() => {
                             element.classList.remove('exploded');
-                            // 关键：破碎完后，把它放回球体
-                            resetActiveCard();
+                            resetActiveCard(); // 弹窗关闭后，自动归位
                         }, 500);
                     };
                 }, 300); 
@@ -282,7 +319,11 @@
             const overlay = document.getElementById('modal-overlay');
             const content = document.getElementById('modal-content');
             document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-text').innerHTML = `已完成两段式交互验证。<br>再次点击卡片触发了粒子破碎效果。`;
+            document.getElementById('modal-text').innerHTML = `
+                ✨ 灵感捕获成功 ✨<br><br>
+                你选择了关键词「${title}」<br>
+                所有过往，皆为序章。
+            `;
             overlay.style.display = 'flex';
             requestAnimationFrame(() => {
                 overlay.style.opacity = '1';
