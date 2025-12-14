@@ -1,44 +1,128 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>星云寄语 - 最终修复版</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>星云情绪卡片 V6.1 - 鲜艳高密度版</title>
     <style>
+        /* --- 基础环境 --- */
         body {
             margin: 0;
-            overflow: hidden;
-            background-color: #000; /* 纯黑背景，衬托发光卡片 */
+            background-color: #000000;
+            background-image: radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000000 100%);
             font-family: 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
         }
-        #canvas-container {
-            width: 100%;
-            height: 100vh;
-            display: block;
+        #container { width: 100%; height: 100vh; }
+
+        /* --- 卡片样式 --- */
+        .element {
+            width: 160px; height: 80px;
+            font-weight: bold; color: #ffffff; text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            text-align: center; line-height: 80px; font-size: 20px;
+            cursor: pointer; border-radius: 8px; user-select: none;
+            transform-style: preserve-3d;
+            will-change: transform, opacity, box-shadow;
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            
+            /* 使用更鲜艳的颜色变量 */
+            background: var(--bg-color); border: 1px solid var(--border-color);
+            box-shadow: 0 0 25px var(--glow-color); /* 增强发光 */
+            pointer-events: auto;
         }
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #00ffff;
-            font-size: 16px;
-            pointer-events: none;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px #00ffff;
+
+        /* 景深变暗 */
+        body.has-hover:not(.has-centered) .element {
+            opacity: 0.15; filter: blur(4px); transform: scale(0.9);
         }
+        /* 悬停高亮 */
+        body.has-hover:not(.has-centered) .element:hover {
+            opacity: 1; filter: blur(0); transform: scale(1.3); z-index: 9999;
+            background: var(--main-color); border-color: #fff; color: #000; text-shadow: none;
+            box-shadow: 0 0 80px var(--main-color), inset 0 0 30px rgba(255,255,255,0.6); /* 增强高亮发光 */
+        }
+
+        /* --- 居中翻转状态 --- */
+        .element.is-centered {
+            position: fixed !important; top: 50% !important; left: 50% !important;
+            transform: translate(-50%, -50%) scale(2.5) rotateY(360deg) !important;
+            z-index: 20000 !important;
+            
+            opacity: 1 !important; filter: blur(0) !important;
+            background: var(--main-color) !important;
+            border-color: #fff !important; color: #000 !important; text-shadow: none !important;
+            box-shadow: 0 0 120px var(--main-color), inset 0 0 50px rgba(255,255,255,0.8) !important;
+        }
+
+        /* --- 破碎动画 --- */
+        @keyframes shake-hard {
+            0% { transform: translate(-50%, -50%) scale(2.5) rotate(0deg); }
+            25% { transform: translate(-52%, -52%) scale(2.5) rotate(-3deg); }
+            50% { transform: translate(-48%, -48%) scale(2.5) rotate(3deg); }
+            75% { transform: translate(-52%, -48%) scale(2.5) rotate(-3deg); }
+            100% { transform: translate(-50%, -50%) scale(2.5) rotate(0deg); }
+        }
+        .element.is-centered.shaking {
+            animation: shake-hard 0.3s infinite;
+            background: #fff !important; color: #000 !important;
+            box-shadow: 0 0 180px #fff !important;
+        }
+        .element.exploded {
+            opacity: 0 !important; 
+            transform: translate(-50%, -50%) scale(6) !important;
+            filter: blur(50px) !important; pointer-events: none;
+            transition: all 0.6s ease-out !important;
+        }
+
+        /* --- 遮罩层 --- */
+        #backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 10000;
+            display: none; opacity: 0; transition: opacity 0.5s;
+        }
+
+        /* --- 弹窗 --- */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(15px);
+            z-index: 30000; display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.4s;
+        }
+        #modal-content {
+            background: rgba(20, 20, 20, 0.95); border: 2px solid var(--modal-color, #00ffff);
+            box-shadow: 0 0 100px var(--modal-color, #00ffff); padding: 40px;
+            border-radius: 16px; text-align: center; color: #fff;
+            max-width: 90%; width: 500px; transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #modal-title { font-size: 36px; margin-bottom: 20px; color: var(--modal-color); }
+        #modal-text { font-size: 18px; color: #ccc; margin-bottom: 30px; line-height: 1.6;}
+        #modal-close {
+            padding: 12px 40px; background: transparent; border: 2px solid var(--modal-color);
+            color: var(--modal-color); font-size: 16px; font-weight: bold; cursor: pointer;
+            border-radius: 50px; transition: 0.2s;
+        }
+        #modal-close:hover { background: var(--modal-color); color: #000; }
     </style>
 </head>
 <body>
-    <div id="loading">正在加载星云系统...</div>
-    <div id="canvas-container"></div>
+
+    <div id="container"></div>
+    <div id="backdrop"></div>
+
+    <div id="modal-overlay">
+        <div id="modal-content">
+            <h2 id="modal-title">标题</h2>
+            <p id="modal-text">内容加载中...</p>
+            <button id="modal-close">关闭 / CLOSE</button>
+        </div>
+    </div>
 
     <script type="importmap">
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-                "@tweenjs/tween.js": "https://unpkg.com/@tweenjs/tween.js@23.1.1/dist/tween.esm.js"
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
             }
         }
     </script>
@@ -46,236 +130,174 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import * as TWEEN from '@tweenjs/tween.js';
+        import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 
-        // --- 配置区域 ---
-        const config = {
-            cardCountPerTheme: 30, // 卡片数量
-            hoverScale: 2.2,       // 悬停放大倍数
-            neighborRadius: 180,   // 触发周围排斥的半径
-            themeClustersSpread: 450, // 几个主题团的间距
-        };
-
-        // 语录数据 (三个色系)
-        const themes = [
-            {
-                name: "暖心问候",
-                // 修复：颜色调得更亮一点
-                colorStart: "#ff758c", colorEnd: "#ff7eb3", 
-                center: new THREE.Vector3(-config.themeClustersSpread, 0, 0),
-                words: ["事事顺心", "祝你平安", "记得吃饭", "早点休息", "别太累了", "天天开心", "好运连连", "温暖常在", "我在听", "你不孤单", "万事胜意", "平安喜乐", "岁岁平安", "多喝热水", "照顾好自己"]
-            },
-            {
-                name: "自我鼓励",
-                colorStart: "#00c6ff", colorEnd: "#0072ff", 
-                center: new THREE.Vector3(config.themeClustersSpread, 120, -100),
-                words: ["你很棒", "别焦虑", "慢慢来", "相信自己", "你可以的", "拒绝内耗", "拥抱自己", "做回自己", "温柔坚定", "保持热爱", "初心未改", "自律自由", "光芒万丈", "未来可期", "奔赴山海"]
-            },
-            {
-                name: "生活期许",
-                colorStart: "#43e97b", colorEnd: "#38f9d7",
-                center: new THREE.Vector3(0, -config.themeClustersSpread, 100),
-                words: ["慢慢变好", "生活明朗", "万物可爱", "来日方长", "莫负韶华", "前程似锦", "财源滚滚", "心想事成", "遇见美好", "重新开始", "一切顺利", "好梦", "享受当下", "未来是我", "这就是我"]
-            }
+        const baseWords = [
+            "灵感爆发", "生活明朗", "万物可爱", "未来可期", "平安喜乐", 
+            "财源滚滚", "事事顺心", "前程似锦", "好运连连", "保持热爱", 
+            "奔赴山海", "初心未改", "来日方长", "岁岁平安", "光芒万丈", 
+            "自律自由", "拒绝焦虑", "拥抱自己", "做回自己", "温柔坚定", 
+            "莫负韶华", "Gemini", "AI艺术", "视觉交互", "赛博朋克",
+            "无限可能", "创造未来", "打破边界", "极致体验", "灵感爆发"
         ];
+        
+        const table = [];
+        // 需求：卡片数量增加到 250 个
+        for(let i=0; i<250; i++) table.push(baseWords[i % baseWords.length]);
 
         let camera, scene, renderer, controls;
-        let raycaster, mouse;
-        let hoveredCard = null;
-        const allCards = [];
-        const starParticles = [];
+        let activeCard = null; 
 
         init();
         animate();
 
         function init() {
-            const container = document.getElementById('canvas-container');
-            document.getElementById('loading').style.display = 'none';
+            const container = document.getElementById('container');
+            const backdrop = document.getElementById('backdrop');
+            const body = document.body;
 
-            // 1. 场景
+            camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.z = 2800; // 稍微拉远相机，以容纳更多卡片
+
             scene = new THREE.Scene();
-            // 雾化效果调淡一点，防止远处卡片太黑
-            scene.fog = new THREE.FogExp2(0x000000, 0.0005);
 
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
-            camera.position.set(0, 0, 1300);
+            for (let i = 0, l = table.length; i < l; i++) {
+                const element = document.createElement('div');
+                element.className = 'element';
+                
+                // 需求：更鲜艳的颜色
+                // 使用 HSL，提高饱和度(S)到 90%-100%，亮度(L)控制在 55%-65% 之间，确保鲜艳且不刺眼
+                const hue = (i / l) * 360; 
+                const saturation = 90 + Math.random() * 10; // 90% - 100%
+                const lightness = 55 + Math.random() * 10;  // 55% - 65%
+                const color = `hsla(${hue}, ${saturation}%, ${lightness}%`;
 
-            // 2. 灯光修复 (解决画面灰暗的核心)
-            // 环境光：纯白，高强度
-            const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
-            scene.add(ambientLight);
-            
-            // 补光：增加几个强光源
-            const light1 = new THREE.PointLight(0xffffff, 3, 2000);
-            light1.position.set(500, 500, 500);
-            scene.add(light1);
-            
-            const light2 = new THREE.PointLight(0x4444ff, 5, 2000); // 蓝色轮廓光
-            light2.position.set(-500, -500, 800);
-            scene.add(light2);
+                // 设置更鲜艳的 CSS 变量
+                element.style.setProperty('--main-color', `${color}, 1)`);
+                // 背景透明度稍低，让发光更明显
+                element.style.setProperty('--bg-color', `${color}, 0.2)`); 
+                element.style.setProperty('--border-color', `${color}, 0.6)`);
+                // 默认发光增强
+                element.style.setProperty('--glow-color', `${color}, 0.5)`);
+                
+                element.textContent = table[i];
 
-            // 3. 渲染器
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
+                // --- 交互事件 (保持不变) ---
+                let startX, startY;
+                element.addEventListener('pointerdown', (e) => { startX = e.clientX; startY = e.clientY; });
+                element.addEventListener('pointerup', (e) => {
+                    if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) {
+                        handleCardClick(element, table[i]);
+                    }
+                });
+                element.addEventListener('mouseenter', () => { if (!activeCard) { body.classList.add('has-hover'); controls.autoRotate = false; } });
+                element.addEventListener('mouseleave', () => { if (!activeCard) { body.classList.remove('has-hover'); controls.autoRotate = true; } });
+
+                const objectCSS = new CSS3DObject(element);
+                const phi = Math.acos(-1 + (2 * i) / l);
+                const theta = Math.sqrt(l * Math.PI) * phi;
+                // 半径增加以适应更多卡片，保持紧凑感
+                objectCSS.position.setFromSphericalCoords(1100, phi, theta);
+                const vector = new THREE.Vector3();
+                vector.copy(objectCSS.position).multiplyScalar(2);
+                objectCSS.lookAt(vector);
+                scene.add(objectCSS);
+            }
+
+            renderer = new CSS3DRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // 开启色调映射，让发光不至于过曝
-            renderer.toneMapping = THREE.ReinhardToneMapping;
-            renderer.toneMappingExposure = 1.2;
             container.appendChild(renderer.domElement);
 
-            // 4. 控制器
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
+            controls.rotateSpeed = 0.5;
             controls.autoRotate = true;
-            controls.autoRotateSpeed = 0.3;
-            controls.enablePan = false;
+            controls.autoRotateSpeed = 0.3; // 卡片多了，转慢点
 
-            // 5. 交互
-            raycaster = new THREE.Raycaster();
-            mouse = new THREE.Vector2();
-            window.addEventListener('mousemove', onMouseMove);
+            backdrop.addEventListener('click', () => { if(activeCard) resetActiveCard(); });
             window.addEventListener('resize', onWindowResize);
-
-            // 内容
-            createStarField();
-            createAllCards();
         }
 
-        function createStarField() {
-            const geometry = new THREE.BufferGeometry();
-            const vertices = [];
-            for (let i = 0; i < 4000; i++) {
-                vertices.push(
-                    THREE.MathUtils.randFloatSpread(5000),
-                    THREE.MathUtils.randFloatSpread(5000),
-                    THREE.MathUtils.randFloatSpread(5000)
-                );
+        // --- 核心逻辑处理 (保持不变) ---
+        function handleCardClick(element, title) {
+            if(element.classList.contains('shaking') || element.classList.contains('exploded')) return;
+            if (element.classList.contains('is-centered')) {
+                triggerExplosion(element, title);
+            } else {
+                if (activeCard && activeCard !== element) resetActiveCard();
+                focusCard(element);
             }
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-            // 星星也调亮
-            const material = new THREE.PointsMaterial({ color: 0xffffff, size: 2.5, transparent: true, opacity: 0.9 });
-            const stars = new THREE.Points(geometry, material);
-            scene.add(stars);
-            starParticles.push(stars);
         }
 
-        function createCardTexture(text, colorStart, colorEnd) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 512;
-            canvas.height = 256;
-
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradient.addColorStop(0, colorStart);
-            gradient.addColorStop(1, colorEnd);
-
-            // 修复：背景透明度从 0.4 提高到 0.85，颜色更实
-            ctx.fillStyle = gradient;
-            ctx.globalAlpha = 0.85; 
-            
-            // 绘制圆角矩形
-            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 40, true, false);
-
-            // 绘制文字
-            ctx.globalAlpha = 1.0;
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 80px "Microsoft YaHei"'; // 字体加大
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            // 加强文字阴影
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-            ctx.shadowBlur = 15;
-            ctx.shadowOffsetX = 5;
-            ctx.shadowOffsetY = 5;
-            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-            // 边框高亮
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-            ctx.lineWidth = 5;
-            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 40, false, true);
-
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.needsUpdate = true;
-            return texture;
-        }
-        
-        function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
-            if (typeof stroke === 'undefined') { stroke = true; }
-            if (typeof radius === 'undefined') { radius = 5; }
-            ctx.beginPath();
-            ctx.moveTo(x + radius, y);
-            ctx.lineTo(x + width - radius, y);
-            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-            ctx.lineTo(x + width, y + height - radius);
-            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-            ctx.lineTo(x + radius, y + height);
-            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-            ctx.lineTo(x, y + radius);
-            ctx.quadraticCurveTo(x, y, x + radius, y);
-            ctx.closePath();
-            if (fill) { ctx.fill(); }
-            if (stroke) { ctx.stroke(); }
+        function focusCard(element) {
+            activeCard = element;
+            document.body.classList.add('has-centered');
+            const backdrop = document.getElementById('backdrop');
+            backdrop.style.display = 'block';
+            setTimeout(() => backdrop.style.opacity = '1', 10);
+            element.classList.add('is-centered');
+            controls.enableRotate = false;
+            controls.autoRotate = false;
         }
 
-        function createAllCards() {
-            themes.forEach(theme => {
-                for (let i = 0; i < config.cardCountPerTheme; i++) {
-                    const text = theme.words[i % theme.words.length];
-                    const texture = createCardTexture(text, theme.colorStart, theme.colorEnd);
+        function resetActiveCard() {
+            if (!activeCard) return;
+            const backdrop = document.getElementById('backdrop');
+            backdrop.style.opacity = '0';
+            setTimeout(() => backdrop.style.display = 'none', 500);
+            activeCard.classList.remove('is-centered');
+            activeCard = null;
+            document.body.classList.remove('has-centered');
+            controls.enableRotate = true;
+            controls.autoRotate = true;
+        }
 
-                    // 修复：使用 MeshPhysicalMaterial 并开启自发光 (Emissive)
-                    const material = new THREE.MeshPhysicalMaterial({
-                        map: texture,
-                        transparent: true,
-                        side: THREE.DoubleSide,
-                        
-                        // 关键修复：让材质自己发光，不再依赖外部光照反射
-                        emissive: 0xffffff,      // 发光基色：白
-                        emissiveMap: texture,    // 纹理即发光贴图
-                        emissiveIntensity: 0.5,  // 基础亮度 (0.5 保证不黑)
-                        
-                        opacity: 1.0,            // 基础不透明度
-                        metalness: 0.1,
-                        roughness: 0.1,
-                        clearcoat: 1.0,          // 玻璃涂层
-                        clearcoatRoughness: 0.1
-                    });
+        function triggerExplosion(element, title) {
+            const modalColor = element.style.getPropertyValue('--main-color');
+            document.getElementById('modal-content').style.setProperty('--modal-color', modalColor);
+            element.classList.add('shaking');
+            setTimeout(() => {
+                element.classList.remove('shaking');
+                element.classList.add('exploded');
+                setTimeout(() => {
+                    showModal(title);
+                    document.getElementById('modal-close').onclick = function() {
+                        closeModal();
+                        setTimeout(() => {
+                            element.classList.remove('exploded');
+                            resetActiveCard();
+                        }, 500);
+                    };
+                }, 300); 
+            }, 500);
+        }
 
-                    const geometry = new THREE.PlaneGeometry(160, 80);
-                    const card = new THREE.Mesh(geometry, material);
-
-                    // 随机分布
-                    const radius = 200 + Math.random() * 250;
-                    const theta = Math.random() * Math.PI * 2;
-                    const phi = Math.acos(2 * Math.random() - 1);
-                    
-                    card.position.set(
-                        theme.center.x + radius * Math.sin(phi) * Math.cos(theta),
-                        theme.center.y + radius * Math.sin(phi) * Math.sin(theta),
-                        theme.center.z + radius * Math.cos(phi)
-                    );
-
-                    card.lookAt(new THREE.Vector3(0,0,0)); // 初始朝向中心
-                    card.rotation.z = Math.random() * 0.5 - 0.25; // 稍微歪一点
-
-                    // 保存初始状态
-                    card.userData.initialPosition = card.position.clone();
-                    card.userData.initialRotation = card.rotation.clone();
-                    card.userData.initialScale = card.scale.clone();
-                    // 浮动参数
-                    card.userData.floatSpeed = 0.0005 + Math.random() * 0.001;
-                    card.userData.floatOffset = Math.random() * 100;
-
-                    scene.add(card);
-                    allCards.push(card);
-                }
+        function showModal(title) {
+            const overlay = document.getElementById('modal-overlay');
+            const content = document.getElementById('modal-content');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-text').innerHTML = `
+                ✨ 灵感捕获成功 ✨<br><br>
+                你选择了关键词「${title}」<br>
+                卡片数量已增加至 250 张，<br>
+                色彩已调整为更高饱和度的鲜艳霓虹风格。
+            `;
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => {
+                overlay.style.opacity = '1';
+                content.style.transform = 'scale(1)';
             });
         }
 
-        function onMouseMove(event) {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        function closeModal() {
+            const overlay = document.getElementById('modal-overlay');
+            const content = document.getElementById('modal-content');
+            overlay.style.opacity = '0';
+            content.style.transform = 'scale(0.8)';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 400);
         }
 
         function onWindowResize() {
@@ -284,109 +306,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        function updateInteraction() {
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(allCards);
-
-            if (intersects.length > 0) {
-                const targetCard = intersects[0].object;
-
-                if (hoveredCard !== targetCard) {
-                    if (hoveredCard) resetCard(hoveredCard);
-                    hoveredCard = targetCard;
-                    focusCard(hoveredCard);
-                    affectNeighbors(hoveredCard);
-                    controls.autoRotate = false; // 悬停时停止自转
-                    document.body.style.cursor = 'pointer';
-                }
-            } else {
-                if (hoveredCard) {
-                    resetCard(hoveredCard);
-                    resetNeighbors();
-                    hoveredCard = null;
-                    controls.autoRotate = true;
-                    document.body.style.cursor = 'default';
-                }
-            }
-        }
-
-        function focusCard(card) {
-            // 放大
-            new TWEEN.Tween(card.scale)
-                .to({ x: config.hoverScale, y: config.hoverScale, z: config.hoverScale }, 300)
-                .easing(TWEEN.Easing.Back.Out)
-                .start();
-            
-            // 变亮 (提升自发光强度)
-            new TWEEN.Tween(card.material)
-                .to({ emissiveIntensity: 1.5 }, 300) // 悬停时变成 1.5 倍亮度，超亮！
-                .start();
-
-            // 转向镜头
-            const targetRotation = camera.rotation.clone();
-            // 这里简单处理，让卡片大致朝向相机
-            card.lookAt(camera.position); 
-        }
-
-        function resetCard(card) {
-            new TWEEN.Tween(card.scale)
-                .to(card.userData.initialScale, 400)
-                .easing(TWEEN.Easing.Quadratic.InOut)
-                .start();
-            
-            // 恢复基础亮度
-            new TWEEN.Tween(card.material)
-                .to({ emissiveIntensity: 0.5 }, 400) // 恢复到 0.5，而不是黑掉
-                .start();
-             
-            // 恢复旋转
-            new TWEEN.Tween(card.rotation)
-                .to({ x: card.userData.initialRotation.x, y: card.userData.initialRotation.y, z: card.userData.initialRotation.z }, 600)
-                .start();
-        }
-
-        function affectNeighbors(centerCard) {
-            allCards.forEach(card => {
-                if (card === centerCard) return;
-                const dist = card.position.distanceTo(centerCard.position);
-                if (dist < config.neighborRadius) {
-                    const dir = card.position.clone().sub(centerCard.position).normalize();
-                    const force = (config.neighborRadius - dist) * 0.8; 
-                    const targetPos = card.userData.initialPosition.clone().add(dir.multiplyScalar(force));
-
-                    new TWEEN.Tween(card.position).to(targetPos, 400).easing(TWEEN.Easing.Cubic.Out).start();
-                    // 周围卡片变暗一点，突出主角
-                    new TWEEN.Tween(card.material).to({ opacity: 0.3, emissiveIntensity: 0.2 }, 400).start();
-                } else {
-                     new TWEEN.Tween(card.material).to({ opacity: 0.8, emissiveIntensity: 0.3 }, 400).start();
-                }
-            });
-        }
-
-        function resetNeighbors() {
-            allCards.forEach(card => {
-                if (card === hoveredCard) return;
-                new TWEEN.Tween(card.position).to(card.userData.initialPosition, 600).easing(TWEEN.Easing.Cubic.InOut).start();
-                new TWEEN.Tween(card.material).to({ opacity: 1.0, emissiveIntensity: 0.5 }, 600).start();
-            });
-        }
-
         function animate() {
             requestAnimationFrame(animate);
-            TWEEN.update();
-            updateInteraction();
             controls.update();
-
-            // 粒子和卡片漂浮
-            const time = Date.now();
-            starParticles.forEach(p => p.rotation.y += 0.0001);
-            
-            allCards.forEach(card => {
-                if (card !== hoveredCard) {
-                    card.position.y += Math.sin(time * card.userData.floatSpeed + card.userData.floatOffset) * 0.1;
-                }
-            });
-
             renderer.render(scene, camera);
         }
     </script>
