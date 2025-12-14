@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>星云情绪卡片 V2.0</title>
+    <title>星云情绪卡片 V3.0 - 多彩紧凑版</title>
     <style>
         /* --- 基础环境设定 --- */
         body {
             margin: 0;
-            background-color: #000;
-            /* 更深邃的宇宙背景 */
-            background-image: 
-                radial-gradient(circle at 50% 50%, #11113a 0%, #000000 80%),
-                url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80');
-            background-size: cover;
-            background-blend-mode: screen;
+            /* 需求：背景用深黑色 */
+            background-color: #000000; 
+            /* 移除背景图片，只保留一个极其微弱的渐变增加一点点深度，几乎是纯黑 */
+            background-image: radial-gradient(circle at 50% 50%, #0a0a0a 0%, #000000 100%);
             font-family: 'Microsoft YaHei', sans-serif;
             overflow: hidden;
         }
@@ -22,89 +19,97 @@
         #container {
             width: 100%;
             height: 100vh;
-            /* 开启 3D 透视 */
             perspective: 1000px; 
             transition: filter 0.5s;
         }
 
         /* --- 卡片核心样式 --- */
         .element {
-            width: 100px; /* 稍微改小一点，增加紧凑感 */
-            height: 50px;
-            /* 默认半透明，显得更有层次 */
-            background: rgba(0, 127, 255, 0.15); 
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
-            border: 1px solid rgba(127, 255, 255, 0.2);
+            /* 需求：卡片更大一点 */
+            width: 180px; 
+            height: 90px;
+            
+            /* 初始颜色由 JS 动态设置，这里只设置通用属性 */
             font-weight: bold;
-            color: rgba(255, 255, 255, 0.8);
+            color: #ffffff; /* 文字统一白色 */
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
             text-align: center;
-            line-height: 50px;
-            font-size: 14px;
+            line-height: 90px;
+            /* 需求：字体随卡片变大 */
+            font-size: 22px; 
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 8px; /* 圆角稍微大一点 */
             user-select: none;
-            /* 关键：启用 GPU 加速，保证动画流畅 */
-            will-change: transform, opacity, box-shadow;
+            will-change: transform, opacity, box-shadow, background;
             transition: all 0.4s ease-out;
+            
+            /* 默认状态下的发光和边框，颜色由CSS变量决定 */
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 15px var(--glow-color);
         }
 
-        /* --- 需求2：悬停高亮与景深效果 --- */
+        /* --- 交互效果 --- */
         
-        /* 当容器处于“有鼠标悬停”状态时，所有卡片变暗变糊 */
+        /* 景深：其他卡片变暗变糊 */
         body.has-hover .element {
-            opacity: 0.1;
-            filter: blur(4px); /* 景深模糊 */
-            transform: scale(0.9);
+            opacity: 0.15;
+            filter: blur(5px);
+            transform: scale(0.95);
         }
 
-        /* 唯独当前鼠标悬停的这张卡片要高亮 */
+        /* 悬停高亮：当前卡片 */
         body.has-hover .element:hover {
             opacity: 1;
             filter: blur(0);
-            transform: scale(1.5); /* 明显变大 */
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.9), inset 0 0 20px rgba(0, 255, 255, 0.5);
-            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.2); /* 稍微放大 */
             z-index: 999;
+            
+            /* 悬停时，背景变亮，发光增强 */
+            background: var(--main-color); 
             border-color: #fff;
+            /* 强烈的外发光 + 内发光 */
+            box-shadow: 0 0 50px var(--main-color), inset 0 0 30px rgba(255,255,255,0.8);
+            color: #000; /* 悬停时文字变黑，增加对比度 */
+            text-shadow: none;
         }
 
-        /* --- 需求3：点击后的动画特效 --- */
-
-        /* 阶段1：剧烈抖动 */
+        /* --- 点击动画 --- */
         @keyframes shake-hard {
-            0% { transform: translate(1px, 1px) rotate(0deg) scale(1.5); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg) scale(1.5); }
-            20% { transform: translate(-3px, 0px) rotate(1deg) scale(1.5); }
-            30% { transform: translate(3px, 2px) rotate(0deg) scale(1.5); }
-            40% { transform: translate(1px, -1px) rotate(1deg) scale(1.5); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg) scale(1.5); }
-            60% { transform: translate(-3px, 1px) rotate(0deg) scale(1.5); }
-            100% { transform: translate(1px, -2px) rotate(-1deg) scale(1.5); }
+            0% { transform: translate(1px, 1px) rotate(0deg) scale(1.2); }
+            10% { transform: translate(-2px, -3px) rotate(-2deg) scale(1.2); }
+            20% { transform: translate(-4px, 0px) rotate(2deg) scale(1.2); }
+            30% { transform: translate(4px, 3px) rotate(0deg) scale(1.2); }
+            40% { transform: translate(2px, -2px) rotate(2deg) scale(1.2); }
+            50% { transform: translate(-2px, 3px) rotate(-2deg) scale(1.2); }
+            60% { transform: translate(-4px, 1px) rotate(0deg) scale(1.2); }
+            100% { transform: translate(2px, -3px) rotate(-2deg) scale(1.2); }
         }
 
         .element.shaking {
             animation: shake-hard 0.3s infinite;
-            background: rgba(255, 50, 50, 0.6); /* 抖动时变红预警 */
-            box-shadow: 0 0 50px rgba(255, 50, 50, 0.8);
+            /* 抖动时颜色变白变亮 */
+            background: #fff !important; 
+            box-shadow: 0 0 80px #fff !important;
+            color: #000 !important;
         }
 
-        /* 阶段2：粒子湮灭（模拟散开） */
         .element.exploded {
             opacity: 0 !important;
-            transform: scale(4) !important; /* 瞬间放大 */
-            filter: blur(20px) !important; /* 模糊化成光斑 */
+            transform: scale(5) !important; 
+            filter: blur(30px) !important; 
             pointer-events: none;
             transition: all 0.6s ease-out;
         }
 
-        /* --- 模态框 (弹窗) --- */
+        /* --- 模态框 (样式保持不变) --- */
         #modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.9); /* 背景更黑 */
+            backdrop-filter: blur(15px);
             z-index: 2000;
-            display: none; /* 默认隐藏 */
+            display: none; 
             justify-content: center;
             align-items: center;
             opacity: 0;
@@ -112,9 +117,9 @@
         }
 
         #modal-content {
-            background: linear-gradient(135deg, rgba(20,20,50,0.9), rgba(0,0,0,0.9));
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
+            background: linear-gradient(135deg, rgba(30,30,30,0.95), rgba(0,0,0,0.95));
+            border: 2px solid var(--modal-color, #00ffff); /* 边框颜色跟随卡片 */
+            box-shadow: 0 0 60px var(--modal-color, #00ffff); /* 发光颜色跟随卡片 */
             padding: 40px;
             border-radius: 15px;
             text-align: center;
@@ -124,31 +129,27 @@
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        #modal-title { font-size: 32px; margin-bottom: 20px; color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+        #modal-title { font-size: 32px; margin-bottom: 20px; color: var(--modal-color, #00ffff); }
         #modal-text { font-size: 18px; line-height: 1.6; color: #ddd; margin-bottom: 30px; }
         #modal-close {
             padding: 10px 30px;
             background: transparent;
-            border: 1px solid #fff;
-            color: #fff;
+            border: 2px solid var(--modal-color, #00ffff);
+            color: var(--modal-color, #00ffff);
+            font-weight: bold;
             cursor: pointer;
             border-radius: 30px;
             transition: 0.3s;
         }
-        #modal-close:hover { background: #fff; color: #000; box-shadow: 0 0 20px #fff; }
-
-        /* 视频容器 */
+        #modal-close:hover { 
+            background: var(--modal-color, #00ffff); 
+            color: #000; 
+            box-shadow: 0 0 30px var(--modal-color, #00ffff); 
+        }
         .video-box {
-            width: 100%;
-            max-width: 400px;
-            height: 225px;
-            background: #000;
-            margin: 0 auto 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #555;
-            border: 1px dashed #333;
+            width: 100%; max-width: 400px; height: 225px; background: #000;
+            margin: 0 auto 20px auto; display: flex; align-items: center; justify-content: center;
+            color: #555; border: 1px dashed #333;
         }
     </style>
 </head>
@@ -159,11 +160,9 @@
     <div id="modal-overlay">
         <div id="modal-content">
             <h2 id="modal-title">TITLE</h2>
-            <div class="video-box" id="modal-video">
-                [ 这里可以自动播放视频 ]
-            </div>
-            <p id="modal-text">这里是详细的文案内容...</p>
-            <button id="modal-close">关闭 / CLOSE</button>
+            <div class="video-box">[ 视频展示区域 ]</div>
+            <p id="modal-text">内容...</p>
+            <button id="modal-close">关闭窗口</button>
         </div>
     </div>
 
@@ -180,26 +179,23 @@
         import * as THREE from 'three';
         import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
         import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
-        import TWEEN from 'https://unpkg.com/@tweenjs/tween.js@23.1.1/dist/tween.esm.js';
 
-        // --- 1. 数据配置：你可以修改这里 ---
         const baseWords = [
             "生活明朗", "万物可爱", "未来可期", "平安喜乐", "财源滚滚", 
             "事事顺心", "前程似锦", "好运连连", "保持热爱", "奔赴山海",
             "初心未改", "来日方长", "岁岁平安", "光芒万丈", "自律自由", 
             "拒绝焦虑", "拥抱自己", "做回自己", "温柔坚定", "莫负韶华",
-            "Gemini", "AI艺术", "视觉交互", "赛博朋克", "星云系统"
+            "Gemini", "AI艺术", "视觉交互", "赛博朋克", "星云系统",
+            "无限可能", "创造未来", "打破边界", "极致体验", "灵感爆发"
         ];
         
-        // 自动生成更多卡片以增加密度 (目标 120+ 个)
+        // 保持 125 个卡片，配合大尺寸，能形成紧凑效果
         const table = [];
         for(let i=0; i<125; i++) {
             table.push(baseWords[i % baseWords.length]);
         }
 
-        let camera, scene, renderer;
-        let controls;
-        const objects = [];
+        let camera, scene, renderer, controls;
 
         init();
         animate();
@@ -209,80 +205,74 @@
             const body = document.body;
 
             camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
-            camera.position.z = 2200; // 稍微拉近一点
+            camera.position.z = 2500; 
 
             scene = new THREE.Scene();
 
-            // --- 核心：创建高密度球体 ---
             for (let i = 0, l = table.length; i < l; i++) {
 
                 const element = document.createElement('div');
                 element.className = 'element';
-                // 随机分配颜色倾向
-                const hue = Math.random() * 60 + 180; // 蓝色到紫色区间
-                element.style.backgroundColor = `hsla(${hue}, 80%, 50%, 0.1)`;
-                element.style.border = `1px solid hsla(${hue}, 80%, 80%, 0.3)`;
+                
+                // --- 需求：多种色彩的卡片 ---
+                // 使用 HSL 颜色空间生成全色相环的鲜艳颜色
+                const hue = (i / l) * 360; // 让颜色在球体上均匀分布
+                const saturation = 85 + Math.random() * 15; // 高饱和度 (85% - 100%)
+                const lightness = 60 + Math.random() * 10;  // 中高亮度 (60% - 70%)
+
+                const mainColor = `hsla(${hue}, ${saturation}%, ${lightness}%, 1)`;
+                const bgColor = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.25)`; // 半透明背景
+                const borderColor = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.5)`; // 边框
+                const glowColor = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.6)`; // 默认发光
+
+                // 设置 CSS 变量，供 hover 和模态框使用
+                element.style.setProperty('--main-color', mainColor);
+                element.style.setProperty('--bg-color', bgColor);
+                element.style.setProperty('--border-color', borderColor);
+                element.style.setProperty('--glow-color', glowColor);
                 
                 element.textContent = table[i];
 
-                // --- 交互逻辑 ---
-                
-                // 1. 悬停逻辑：告诉 body 现在有东西被悬停了
-                element.addEventListener('mouseenter', () => {
-                    body.classList.add('has-hover');
-                });
-                element.addEventListener('mouseleave', () => {
-                    body.classList.remove('has-hover');
-                });
+                // --- 交互事件 ---
+                element.addEventListener('mouseenter', () => body.classList.add('has-hover'));
+                element.addEventListener('mouseleave', () => body.classList.remove('has-hover'));
 
-                // 2. 点击逻辑：抖动 -> 破碎 -> 弹窗
                 element.addEventListener('click', function(e) {
-                    // 如果正在动画中，防止重复点击
                     if(element.classList.contains('shaking')) return;
+                    
+                    // 把当前卡片的颜色传给模态框
+                    document.getElementById('modal-content').style.setProperty('--modal-color', mainColor);
 
-                    // A. 开始抖动
                     element.classList.add('shaking');
-
-                    // B. 600毫秒后“破碎”并弹出
                     setTimeout(() => {
                         element.classList.remove('shaking');
-                        element.classList.add('exploded'); // 触发CSS破碎动画
-
-                        // C. 再过 300毫秒显示模态框
+                        element.classList.add('exploded');
                         setTimeout(() => {
                             showModal(table[i]);
-                            
-                            // D. 模态框关闭后，复原卡片
-                            const resetCard = () => {
-                                element.classList.remove('exploded');
-                            };
-                            // 绑定一次性复原事件给关闭按钮
                             document.getElementById('modal-close').onclick = () => {
                                 closeModal();
-                                setTimeout(resetCard, 500); // 延迟复原，避免穿帮
+                                setTimeout(() => element.classList.remove('exploded'), 500);
                             };
                         }, 300);
-
                     }, 600);
                 });
 
                 const objectCSS = new CSS3DObject(element);
 
-                // 斐波那契球体分布算法 (保证均匀且紧凑)
+                // 斐波那契球体分布
                 const phi = Math.acos(-1 + (2 * i) / l);
                 const theta = Math.sqrt(l * Math.PI) * phi;
                 
-                // 半径设为 850，根据卡片数量调整，数量越多半径越大
-                const radius = 850; 
+                // 需求：卡片紧挨着。
+                // 半径设置为 900，配合 180x90 的卡片尺寸，能形成非常紧凑的效果。
+                const radius = 900; 
                 objectCSS.position.setFromSphericalCoords(radius, phi, theta);
 
-                // 强制卡片朝向圆心，这样更有包裹感
                 const vector = new THREE.Vector3();
                 vector.copy(objectCSS.position).multiplyScalar(2);
                 objectCSS.lookAt(vector);
 
                 scene.add(objectCSS);
-                objects.push(objectCSS);
             }
 
             renderer = new CSS3DRenderer();
@@ -290,7 +280,7 @@
             container.appendChild(renderer.domElement);
 
             controls = new TrackballControls(camera, renderer.domElement);
-            controls.rotateSpeed = 0.8; // 加快一点旋转灵敏度
+            controls.rotateSpeed = 1.0;
             controls.noZoom = false;
             controls.minDistance = 500;
             controls.maxDistance = 4000;
@@ -298,18 +288,13 @@
             window.addEventListener('resize', onWindowResize);
         }
 
-        // --- 模态框控制函数 ---
         function showModal(titleText) {
             const overlay = document.getElementById('modal-overlay');
             const content = document.getElementById('modal-content');
-            const title = document.getElementById('modal-title');
-            const text = document.getElementById('modal-text');
-
-            title.innerText = titleText;
-            text.innerText = `你点击了【${titleText}】。\n在这里可以配置针对这个关键词的专属解读文案。\n甚至可以嵌入一段 <video> 标签来播放 AI 生成的视频。`;
+            document.getElementById('modal-title').innerText = titleText;
+            document.getElementById('modal-text').innerText = `你选择了【${titleText}】。此弹窗的颜色主题已自动适配刚才点击的卡片颜色。\n\n在这个纯黑背景下，多彩的霓虹卡片显得格外耀眼，紧凑的排列让视觉效果更加震撼。`;
             
             overlay.style.display = 'flex';
-            // 强制重绘以触发 transition
             requestAnimationFrame(() => {
                 overlay.style.opacity = '1';
                 content.style.transform = 'scale(1)';
@@ -319,13 +304,9 @@
         function closeModal() {
             const overlay = document.getElementById('modal-overlay');
             const content = document.getElementById('modal-content');
-            
             overlay.style.opacity = '0';
             content.style.transform = 'scale(0.8)';
-            
-            setTimeout(() => {
-                overlay.style.display = 'none';
-            }, 500);
+            setTimeout(() => overlay.style.display = 'none', 500);
         }
 
         function onWindowResize() {
@@ -338,8 +319,8 @@
             requestAnimationFrame(animate);
             controls.update();
             // 缓慢自转
-            scene.rotation.y += 0.0008;
-            scene.rotation.x += 0.0003;
+            scene.rotation.y += 0.0005;
+            scene.rotation.x += 0.0002;
             renderer.render(scene, camera);
         }
     </script>
