@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>星云情绪卡片 V4.0 - 交互修复版</title>
+    <title>星云情绪卡片 V5.0 - 两段式交互</title>
     <style>
+        /* --- 基础环境设定 --- */
         body {
             margin: 0;
             background-color: #000000;
@@ -12,123 +13,99 @@
             font-family: 'Microsoft YaHei', sans-serif;
             overflow: hidden;
         }
+        #container { width: 100%; height: 100vh; }
 
-        #container {
-            width: 100%;
-            height: 100vh;
-        }
-
-        /* --- 卡片样式 --- */
+        /* --- 卡片核心样式 --- */
         .element {
-            width: 160px; /* 尺寸优化 */
-            height: 80px;
-            font-weight: bold;
-            color: #ffffff;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
-            text-align: center;
-            line-height: 80px;
-            font-size: 20px;
-            cursor: pointer; /* 确保鼠标是手型 */
-            border-radius: 8px;
-            user-select: none;
+            width: 160px; height: 80px;
+            font-weight: bold; color: #ffffff; text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            text-align: center; line-height: 80px; font-size: 20px;
+            cursor: pointer; border-radius: 8px; user-select: none;
+            /* 开启3D变换保留，为翻转做准备 */
+            transform-style: preserve-3d;
             will-change: transform, opacity, box-shadow;
-            transition: all 0.3s ease-out;
-            
-            /* 默认样式变量 */
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 0 15px var(--glow-color);
-            pointer-events: auto; /* 关键：确保能接收点击 */
-        }
-
-        /* 景深效果 */
-        body.has-hover .element {
-            opacity: 0.1;
-            filter: blur(4px);
-            transform: scale(0.9);
-        }
-
-        /* 悬停高亮 */
-        body.has-hover .element:hover {
-            opacity: 1;
-            filter: blur(0);
-            transform: scale(1.3);
-            z-index: 9999; /* 悬停时层级最高 */
-            background: var(--main-color); 
-            border-color: #fff;
-            box-shadow: 0 0 60px var(--main-color), inset 0 0 20px rgba(255,255,255,0.5);
-            color: #000;
-            text-shadow: none;
-        }
-
-        /* --- 点击动画 --- */
-        @keyframes shake-hard {
-            0% { transform: translate(1px, 1px) rotate(0deg) scale(1.3); }
-            10% { transform: translate(-3px, -3px) rotate(-2deg) scale(1.3); }
-            30% { transform: translate(3px, 3px) rotate(0deg) scale(1.3); }
-            50% { transform: translate(-3px, 3px) rotate(-2deg) scale(1.3); }
-            100% { transform: translate(3px, -3px) rotate(-2deg) scale(1.3); }
-        }
-
-        .element.shaking {
-            animation: shake-hard 0.3s infinite;
-            background: #fff !important; 
-            color: #000 !important;
-            box-shadow: 0 0 100px #fff !important;
-            z-index: 10000 !important; /* 点击时层级宇宙最高 */
-        }
-
-        .element.exploded {
-            opacity: 0 !important;
-            transform: scale(3) !important;
-            filter: blur(20px) !important;
-            pointer-events: none;
+            /* 基础过渡时间 */
             transition: all 0.5s ease-out;
+            
+            /* 动态颜色变量 */
+            background: var(--bg-color); border: 1px solid var(--border-color);
+            box-shadow: 0 0 15px var(--glow-color); pointer-events: auto;
         }
 
-        /* --- 弹窗样式 --- */
+        /* 景深效果 (仅当没有卡片居中时生效) */
+        body.has-hover:not(.has-centered) .element {
+            opacity: 0.1; filter: blur(4px); transform: scale(0.9);
+        }
+        /* 悬停高亮 (仅当没有卡片居中时生效) */
+        body.has-hover:not(.has-centered) .element:hover {
+            opacity: 1; filter: blur(0); transform: scale(1.3); z-index: 9999;
+            background: var(--main-color); border-color: #fff; color: #000; text-shadow: none;
+            box-shadow: 0 0 60px var(--main-color), inset 0 0 20px rgba(255,255,255,0.5);
+        }
+
+        /* --- V5.0 新增：第一阶段 - 居中翻转状态 --- */
+        .element.is-centered {
+            /* 核心Trick：使用 fixed 强制脱离 Three.js 的 3D 控制 */
+            position: fixed !important;
+            top: 50% !important; left: 50% !important;
+            /* 居中定位 + 放大2.5倍 + 翻转一圈(360deg) */
+            transform: translate(-50%, -50%) scale(2.5) rotateY(360deg) !important;
+            z-index: 20000 !important; /* 层级极高 */
+            
+            /* 覆盖默认样式，确保居中时是高亮状态 */
+            opacity: 1 !important; filter: blur(0) !important;
+            background: var(--main-color) !important;
+            border-color: #fff !important; color: #000 !important; text-shadow: none !important;
+            box-shadow: 0 0 100px var(--main-color), inset 0 0 40px rgba(255,255,255,0.8) !important;
+            
+            /* 缓慢而有弹性的过渡动画 */
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+
+        /* --- 第二阶段 - 抖动与破碎 --- */
+        @keyframes shake-hard {
+            0% { transform: translate(-50%, -50%) scale(2.5) rotate(0deg); }
+            25% { transform: translate(-52%, -52%) scale(2.5) rotate(-3deg); }
+            50% { transform: translate(-48%, -48%) scale(2.5) rotate(3deg); }
+            75% { transform: translate(-52%, -48%) scale(2.5) rotate(-3deg); }
+            100% { transform: translate(-50%, -50%) scale(2.5) rotate(0deg); }
+        }
+        /* 抖动时需要保持居中状态的基础 transform */
+        .element.is-centered.shaking {
+            animation: shake-hard 0.3s infinite;
+            background: #fff !important; color: #000 !important;
+            box-shadow: 0 0 120px #fff !important;
+        }
+        .element.exploded {
+            opacity: 0 !important; 
+            /* 破碎时继续放大并模糊 */
+            transform: translate(-50%, -50%) scale(5) !important;
+            filter: blur(30px) !important; pointer-events: none;
+            transition: all 0.6s ease-out !important;
+        }
+
+        /* --- 弹窗样式 (保持不变) --- */
         #modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            backdrop-filter: blur(10px);
-            z-index: 20000; /* 弹窗必须在最上层 */
-            display: none;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.4s;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(15px);
+            z-index: 30000; display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.4s;
         }
-
         #modal-content {
-            background: rgba(20, 20, 20, 0.95);
-            border: 2px solid var(--modal-color, #00ffff);
-            box-shadow: 0 0 80px var(--modal-color, #00ffff);
-            padding: 40px;
-            border-radius: 16px;
-            text-align: center;
-            color: #fff;
-            max-width: 90%;
-            width: 500px;
-            transform: scale(0.8);
+            background: rgba(20, 20, 20, 0.95); border: 2px solid var(--modal-color, #00ffff);
+            box-shadow: 0 0 80px var(--modal-color, #00ffff); padding: 40px;
+            border-radius: 16px; text-align: center; color: #fff;
+            max-width: 90%; width: 500px; transform: scale(0.8);
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-
         #modal-title { font-size: 36px; margin-bottom: 20px; color: var(--modal-color); }
         #modal-text { font-size: 18px; color: #ccc; margin-bottom: 30px; line-height: 1.6;}
         #modal-close {
-            padding: 12px 40px;
-            background: transparent;
-            border: 2px solid var(--modal-color);
-            color: var(--modal-color);
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 50px;
-            transition: 0.2s;
+            padding: 12px 40px; background: transparent; border: 2px solid var(--modal-color);
+            color: var(--modal-color); font-size: 16px; font-weight: bold; cursor: pointer;
+            border-radius: 50px; transition: 0.2s;
         }
         #modal-close:hover { background: var(--modal-color); color: #000; }
-
     </style>
 </head>
 <body>
@@ -154,11 +131,9 @@
 
     <script type="module">
         import * as THREE from 'three';
-        // 关键修复：改用 OrbitControls
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 
-        // 词库配置
         const baseWords = [
             "灵感爆发", "生活明朗", "万物可爱", "未来可期", "平安喜乐", 
             "财源滚滚", "事事顺心", "前程似锦", "好运连连", "保持热爱", 
@@ -168,12 +143,11 @@
         ];
         
         const table = [];
-        // 生成 120 个卡片
-        for(let i=0; i<120; i++) {
-            table.push(baseWords[i % baseWords.length]);
-        }
+        for(let i=0; i<120; i++) table.push(baseWords[i % baseWords.length]);
 
         let camera, scene, renderer, controls;
+        // 用于记录当前是否已经有卡片被聚焦了
+        let activeCard = null; 
 
         init();
         animate();
@@ -182,141 +156,147 @@
             const container = document.getElementById('container');
             const body = document.body;
 
-            // 相机设置
             camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
             camera.position.z = 2200;
 
             scene = new THREE.Scene();
 
-            // 生成卡片
             for (let i = 0, l = table.length; i < l; i++) {
                 const element = document.createElement('div');
                 element.className = 'element';
                 
-                // 颜色生成
                 const hue = (i / l) * 360; 
-                const color = `hsla(${hue}, 85%, 60%`; // 基础色
-                
-                // 设置CSS变量
+                const color = `hsla(${hue}, 85%, 60%`;
                 element.style.setProperty('--main-color', `${color}, 1)`);
                 element.style.setProperty('--bg-color', `${color}, 0.15)`);
                 element.style.setProperty('--border-color', `${color}, 0.5)`);
                 element.style.setProperty('--glow-color', `${color}, 0.4)`);
-                
                 element.textContent = table[i];
 
                 // --- 事件监听 ---
-                
-                // 1. 悬停处理
-                element.addEventListener('mouseenter', () => body.classList.add('has-hover'));
+                element.addEventListener('mouseenter', () => {
+                    // 只有在没有卡片居中时，才触发景深
+                    if (!activeCard) body.classList.add('has-hover');
+                });
                 element.addEventListener('mouseleave', () => body.classList.remove('has-hover'));
 
-                // 2. 点击处理 (核心交互逻辑)
-                // 使用 pointerdown/up 并不是必须的，因为 OrbitControls 会处理 click
-                // 这里直接用 click，在 OrbitControls 下非常稳定
+                // --- 核心交互逻辑 V5.0 ---
                 element.addEventListener('click', function(e) {
+                    // 防止在动画过程中重复点击
+                    if(element.classList.contains('shaking') || element.classList.contains('exploded')) return;
+
+                    // 【判断状态】
                     
-                    // 防止重复点击
-                    if(element.classList.contains('shaking')) return;
-                    
-                    console.log("卡片被点击了:", table[i]); // 调试用
-
-                    // 将颜色传递给弹窗
-                    const modalColor = element.style.getPropertyValue('--main-color');
-                    document.getElementById('modal-content').style.setProperty('--modal-color', modalColor);
-
-                    // 动画流程：抖动 -> 消失 -> 弹窗
-                    element.classList.add('shaking');
-
-                    setTimeout(() => {
-                        element.classList.remove('shaking');
-                        element.classList.add('exploded'); // 粒子破碎
-                        
-                        // 延迟弹出模态框
-                        setTimeout(() => {
-                            showModal(table[i]);
-                            
-                            // 关闭按钮逻辑
-                            const closeBtn = document.getElementById('modal-close');
-                            closeBtn.onclick = function() {
-                                closeModal();
-                                // 弹窗关闭后，恢复卡片
-                                setTimeout(() => {
-                                    element.classList.remove('exploded');
-                                }, 500);
-                            };
-                        }, 250); // 破碎动画进行250ms后弹窗
-                    }, 500); // 抖动500ms
+                    // 状态 B：如果这张卡片已经是居中状态 -> 执行第二阶段（破碎弹窗）
+                    if (element.classList.contains('is-centered')) {
+                        console.log("第二阶段点击：触发破碎");
+                        triggerExplosion(element, table[i]);
+                    } 
+                    // 状态 A：如果这张卡片在球体上 -> 执行第一阶段（居中翻转）
+                    else {
+                        console.log("第一阶段点击：执行居中翻转");
+                        // 如果此时有其他卡片居中了，先把那个卡片放回去
+                        if (activeCard && activeCard !== element) {
+                           resetActiveCard();
+                        }
+                        focusCard(element);
+                    }
                 });
 
                 const objectCSS = new CSS3DObject(element);
-
-                // 斐波那契球面分布
                 const phi = Math.acos(-1 + (2 * i) / l);
                 const theta = Math.sqrt(l * Math.PI) * phi;
-                const radius = 850; 
-                
-                objectCSS.position.setFromSphericalCoords(radius, phi, theta);
-                
-                // 朝向球心
+                objectCSS.position.setFromSphericalCoords(850, phi, theta);
                 const vector = new THREE.Vector3();
                 vector.copy(objectCSS.position).multiplyScalar(2);
                 objectCSS.lookAt(vector);
-
                 scene.add(objectCSS);
             }
 
-            // 渲染器
             renderer = new CSS3DRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
             container.appendChild(renderer.domElement);
 
-            // --- 关键修复：使用 OrbitControls ---
             controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true; // 开启阻尼，让旋转更有惯性
+            controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.rotateSpeed = 0.5;
-            controls.autoRotate = true; // 开启自动旋转
+            controls.autoRotate = true;
             controls.autoRotateSpeed = 0.5;
             
             window.addEventListener('resize', onWindowResize);
         }
 
-        // 弹窗显示函数
+        // --- 功能函数 ---
+
+        // 第一阶段：聚焦卡片
+        function focusCard(element) {
+            activeCard = element;
+            document.body.classList.add('has-centered'); // 告诉 body 现在有卡片居中了
+            
+            // 添加居中类名，触发 CSS 翻转动画
+            element.classList.add('is-centered');
+            
+            // 暂停背景球体的自动旋转，让视觉聚焦
+            controls.autoRotate = false;
+        }
+
+        // 重置当前聚焦的卡片（把它放回球体）
+        function resetActiveCard() {
+            if (!activeCard) return;
+            activeCard.classList.remove('is-centered');
+            activeCard = null;
+            document.body.classList.remove('has-centered');
+            controls.autoRotate = true; // 恢复球体旋转
+        }
+
+        // 第二阶段：触发破碎和弹窗
+        function triggerExplosion(element, title) {
+            const modalColor = element.style.getPropertyValue('--main-color');
+            document.getElementById('modal-content').style.setProperty('--modal-color', modalColor);
+
+            element.classList.add('shaking');
+
+            setTimeout(() => {
+                element.classList.remove('shaking');
+                element.classList.add('exploded');
+                
+                setTimeout(() => {
+                    showModal(title);
+                    
+                    // 绑定关闭按钮事件
+                    document.getElementById('modal-close').onclick = function() {
+                        closeModal();
+                        // 弹窗关闭后，彻底重置这张卡片的状态
+                        setTimeout(() => {
+                            element.classList.remove('exploded');
+                            // 关键：破碎完后，把它放回球体
+                            resetActiveCard();
+                        }, 500);
+                    };
+                }, 300); 
+            }, 500);
+        }
+
         function showModal(title) {
             const overlay = document.getElementById('modal-overlay');
             const content = document.getElementById('modal-content');
-            
             document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-text').innerHTML = `
-                你点击了灵感卡片【${title}】<br><br>
-                在这一刻，宇宙的能量与你的思绪产生了共鸣。<br>
-                愿你保持热爱，奔赴山海。
-            `;
-            
+            document.getElementById('modal-text').innerHTML = `已完成两段式交互验证。<br>再次点击卡片触发了粒子破碎效果。`;
             overlay.style.display = 'flex';
-            // 强制重绘
             requestAnimationFrame(() => {
                 overlay.style.opacity = '1';
                 content.style.transform = 'scale(1)';
             });
-            
-            // 暂停背景自动旋转
-            controls.autoRotate = false;
         }
 
-        // 弹窗关闭函数
         function closeModal() {
             const overlay = document.getElementById('modal-overlay');
             const content = document.getElementById('modal-content');
-            
             overlay.style.opacity = '0';
             content.style.transform = 'scale(0.8)';
-            
             setTimeout(() => {
                 overlay.style.display = 'none';
-                // 恢复自动旋转
-                controls.autoRotate = true;
             }, 400);
         }
 
@@ -328,7 +308,7 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            controls.update(); // 必须调用
+            controls.update();
             renderer.render(scene, camera);
         }
     </script>
