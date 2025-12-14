@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>星云寄语 - 繁星版</title>
+    <title>星云寄语 - 鲜艳霓虹版</title>
     <style>
         body {
             margin: 0;
@@ -30,7 +30,7 @@
     </style>
 </head>
 <body>
-    <div id="loading">正在加载浩瀚星云...</div>
+    <div id="loading">正在加载霓虹星云...</div>
     <div id="canvas-container"></div>
 
     <script type="importmap">
@@ -50,50 +50,34 @@
 
         // --- 配置区域 ---
         const config = {
-            // 🔥 修改点1：大幅增加卡片数量 (从35改为80)
-            cardCountPerTheme: 80, 
+            cardCountPerTheme: 35, // 稍微增加一点卡片数量
             hoverScale: 2.2,
             neighborRadius: 180,
             themeClustersSpread: 450,
         };
 
+        // 🎨 修改点1：使用高饱和度霓虹色系
         const themes = [
             {
                 name: "暖心问候",
+                // 鲜艳的玫红到橙色渐变
                 colorStart: "#FF0055", colorEnd: "#FF9900", 
                 center: new THREE.Vector3(-config.themeClustersSpread, 0, 0),
-                // 🔥 修改点2：扩充词库，防止重复
-                words: [
-                    "事事顺心", "祝你平安", "记得吃饭", "早点休息", "别太累了", "天天开心", 
-                    "好运连连", "温暖常在", "我在听", "你不孤单", "万事胜意", "平安喜乐", 
-                    "岁岁平安", "多喝热水", "照顾好自己", "拥抱你", "别感冒了", "心情愉悦", 
-                    "笑口常开", "不管不顾", "只要快乐", "你要幸福", "有人爱你", "永远善良",
-                    "心向阳光", "无灾无难", "长命百岁", "吃嘛嘛香", "睡个好觉", "好运加满"
-                ]
+                words: ["事事顺心", "祝你平安", "记得吃饭", "早点休息", "别太累了", "天天开心", "好运连连", "温暖常在", "我在听", "你不孤单", "万事胜意", "平安喜乐", "岁岁平安", "多喝热水", "照顾好自己"]
             },
             {
                 name: "自我鼓励",
+                // 亮眼的电光蓝到青色
                 colorStart: "#0033FF", colorEnd: "#00FFFF", 
                 center: new THREE.Vector3(config.themeClustersSpread, 120, -100),
-                words: [
-                    "你很棒", "别焦虑", "慢慢来", "相信自己", "你可以的", "拒绝内耗", 
-                    "拥抱自己", "做回自己", "温柔坚定", "保持热爱", "初心未改", "自律自由", 
-                    "光芒万丈", "未来可期", "奔赴山海", "独一无二", "闪闪发光", "勇敢做梦", 
-                    "绝不认输", "野蛮生长", "大器晚成", "厚积薄发", "勇往直前", "无所畏惧",
-                    "值得最好", "从容自信", "内心强大", "如愿以偿", "必定上岸", "由此启程"
-                ]
+                words: ["你很棒", "别焦虑", "慢慢来", "相信自己", "你可以的", "拒绝内耗", "拥抱自己", "做回自己", "温柔坚定", "保持热爱", "初心未改", "自律自由", "光芒万丈", "未来可期", "奔赴山海"]
             },
             {
                 name: "生活期许",
+                // 荧光绿到柠檬黄
                 colorStart: "#00FF66", colorEnd: "#CCFF00",
                 center: new THREE.Vector3(0, -config.themeClustersSpread, 100),
-                words: [
-                    "慢慢变好", "生活明朗", "万物可爱", "来日方长", "莫负韶华", "前程似锦", 
-                    "财源滚滚", "心想事成", "遇见美好", "重新开始", "一切顺利", "好梦", 
-                    "享受当下", "未来是我", "这就是我", "好事发生", "锦鲤附体", "暴富暴瘦", 
-                    "日进斗金", "花开富贵", "蒸蒸日上", "步步高升", "得偿所愿", "皆大欢喜",
-                    "雨过天晴", "否极泰来", "顺风顺水", "满心欢喜", "不负此生", "如约而至"
-                ]
+                words: ["慢慢变好", "生活明朗", "万物可爱", "来日方长", "莫负韶华", "前程似锦", "财源滚滚", "心想事成", "遇见美好", "重新开始", "一切顺利", "好梦", "享受当下", "未来是我", "这就是我"]
             }
         ];
 
@@ -111,26 +95,32 @@
             document.getElementById('loading').style.display = 'none';
 
             scene = new THREE.Scene();
+            // 雾化稍微调淡，让远处的鲜艳卡片也能被看见
             scene.fog = new THREE.FogExp2(0x000000, 0.0003);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
-            camera.position.set(0, 0, 1400); // 稍微拉远一点相机，因为卡片变多了
+            camera.position.set(0, 0, 1300);
 
+            // 环境光：纯白
             const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
             scene.add(ambientLight);
             
-            const light1 = new THREE.PointLight(0xff00ff, 3, 2000); 
+            // 补光：增加几个强光源，提升立体感
+            const light1 = new THREE.PointLight(0xff00ff, 3, 2000); // 紫光辅助
             light1.position.set(500, 500, 500);
             scene.add(light1);
             
-            const light2 = new THREE.PointLight(0x00ffff, 3, 2000);
+            const light2 = new THREE.PointLight(0x00ffff, 3, 2000); // 蓝光辅助
             light2.position.set(-500, -500, 800);
             scene.add(light2);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.toneMapping = THREE.NoToneMapping; 
+            
+            // 🚫 修改点2：移除 Reinhard 色调映射，防止颜色发灰
+            // renderer.toneMapping = THREE.ReinhardToneMapping; 
+            renderer.toneMapping = THREE.NoToneMapping; // 保持原始色彩
             
             container.appendChild(renderer.domElement);
 
@@ -153,7 +143,7 @@
         function createStarField() {
             const geometry = new THREE.BufferGeometry();
             const vertices = [];
-            for (let i = 0; i < 5000; i++) { // 稍微增加一点背景星星
+            for (let i = 0; i < 4000; i++) {
                 vertices.push(
                     THREE.MathUtils.randFloatSpread(5000),
                     THREE.MathUtils.randFloatSpread(5000),
@@ -177,6 +167,7 @@
             gradient.addColorStop(0, colorStart);
             gradient.addColorStop(1, colorEnd);
 
+            // 🖌️ 修改点3：提高 Canvas 不透明度，让颜色更实、更鲜艳
             ctx.fillStyle = gradient;
             ctx.globalAlpha = 0.92; 
             
@@ -187,12 +178,14 @@
             ctx.font = 'bold 85px "Microsoft YaHei"'; 
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            // 黑色阴影增强文字对比度
             ctx.shadowColor = 'rgba(0, 0, 0, 1.0)';
             ctx.shadowBlur = 10;
             ctx.shadowOffsetX = 4;
             ctx.shadowOffsetY = 4;
             ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
+            // 边框更亮
             ctx.strokeStyle = 'rgba(255,255,255,0.8)';
             ctx.lineWidth = 8;
             roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 40, false, true);
@@ -230,24 +223,23 @@
                         map: texture,
                         transparent: true,
                         side: THREE.DoubleSide,
-                        emissive: 0xffffff,       
-                        emissiveMap: texture,     
-                        emissiveIntensity: 0.8,   
-                        opacity: 1.0,             
-                        metalness: 0.2, 
+                        
+                        // 💡 修改点4：提升自发光强度，让霓虹感更强
+                        emissive: 0xffffff,      
+                        emissiveMap: texture,    
+                        emissiveIntensity: 0.8,  // 从 0.5 提升到 0.8
+                        
+                        opacity: 1.0,            
+                        metalness: 0.2, // 稍微增加金属感，增加反光
                         roughness: 0.1,
-                        clearcoat: 1.0,           
+                        clearcoat: 1.0,          
                         clearcoatRoughness: 0.1
                     });
 
                     const geometry = new THREE.PlaneGeometry(160, 80);
                     const card = new THREE.Mesh(geometry, material);
 
-                    // 🔥 修改点3：扩大分布半径，让更多的卡片有空间展示
-                    // 旧值: 200 + Math.random() * 250
-                    // 新值: 220 + Math.random() * 380
-                    const radius = 220 + Math.random() * 380;
-                    
+                    const radius = 200 + Math.random() * 250;
                     const theta = Math.random() * Math.PI * 2;
                     const phi = Math.acos(2 * Math.random() - 1);
                     
@@ -315,6 +307,7 @@
                 .easing(TWEEN.Easing.Back.Out)
                 .start();
             
+            // 悬停时超亮
             new TWEEN.Tween(card.material)
                 .to({ emissiveIntensity: 2.0 }, 300) 
                 .start();
@@ -328,6 +321,7 @@
                 .easing(TWEEN.Easing.Quadratic.InOut)
                 .start();
             
+            // 恢复高亮度
             new TWEEN.Tween(card.material)
                 .to({ emissiveIntensity: 0.8 }, 400) 
                 .start();
@@ -349,7 +343,7 @@
                     new TWEEN.Tween(card.position).to(targetPos, 400).easing(TWEEN.Easing.Cubic.Out).start();
                     new TWEEN.Tween(card.material).to({ opacity: 0.3, emissiveIntensity: 0.2 }, 400).start();
                 } else {
-                      new TWEEN.Tween(card.material).to({ opacity: 0.8, emissiveIntensity: 0.5 }, 400).start();
+                     new TWEEN.Tween(card.material).to({ opacity: 0.8, emissiveIntensity: 0.5 }, 400).start();
                 }
             });
         }
