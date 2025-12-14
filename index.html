@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>星云寄语 - Nebula Words</title>
+    <title>星云寄语 - 最终修复版</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #000;
+            background-color: #000; /* 纯黑背景，衬托发光卡片 */
             font-family: 'Microsoft YaHei', sans-serif;
         }
         #canvas-container {
@@ -21,14 +21,16 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
-            font-size: 20px;
+            color: #00ffff;
+            font-size: 16px;
             pointer-events: none;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ffff;
         }
     </style>
 </head>
 <body>
-    <div id="loading">正在加载星云...</div>
+    <div id="loading">正在加载星云系统...</div>
     <div id="canvas-container"></div>
 
     <script type="importmap">
@@ -48,35 +50,35 @@
 
         // --- 配置区域 ---
         const config = {
-            cardCountPerTheme: 25, // 每个主题的卡片数量
-            hoverScale: 2.5,       // 悬停放大倍数
-            neighborRadius: 150,   // 触发周围反馈的半径
-            themeClustersSpread: 400, // 主题集群之间的扩散距离
+            cardCountPerTheme: 30, // 卡片数量
+            hoverScale: 2.2,       // 悬停放大倍数
+            neighborRadius: 180,   // 触发周围排斥的半径
+            themeClustersSpread: 450, // 几个主题团的间距
         };
 
-        // 语录数据 (分为不同主题)
+        // 语录数据 (三个色系)
         const themes = [
             {
-                name: "暖心问候 (Heartwarming)",
-                colorStart: "#ff9a9e", colorEnd: "#fad0c4", // 暖粉色系
+                name: "暖心问候",
+                // 修复：颜色调得更亮一点
+                colorStart: "#ff758c", colorEnd: "#ff7eb3", 
                 center: new THREE.Vector3(-config.themeClustersSpread, 0, 0),
                 words: ["事事顺心", "祝你平安", "记得吃饭", "早点休息", "别太累了", "天天开心", "好运连连", "温暖常在", "我在听", "你不孤单", "万事胜意", "平安喜乐", "岁岁平安", "多喝热水", "照顾好自己"]
             },
             {
-                name: "自我鼓励 (Self-Encouragement)",
-                colorStart: "#a1c4fd", colorEnd: "#c2e9fb", // 清新蓝色系
-                center: new THREE.Vector3(config.themeClustersSpread, 100, -100),
+                name: "自我鼓励",
+                colorStart: "#00c6ff", colorEnd: "#0072ff", 
+                center: new THREE.Vector3(config.themeClustersSpread, 120, -100),
                 words: ["你很棒", "别焦虑", "慢慢来", "相信自己", "你可以的", "拒绝内耗", "拥抱自己", "做回自己", "温柔坚定", "保持热爱", "初心未改", "自律自由", "光芒万丈", "未来可期", "奔赴山海"]
             },
             {
-                name: "生活期许 (Life Expectations)",
-                colorStart: "#84fab0", colorEnd: "#8fd3f4", // 治愈绿色系
+                name: "生活期许",
+                colorStart: "#43e97b", colorEnd: "#38f9d7",
                 center: new THREE.Vector3(0, -config.themeClustersSpread, 100),
                 words: ["慢慢变好", "生活明朗", "万物可爱", "来日方长", "莫负韶华", "前程似锦", "财源滚滚", "心想事成", "遇见美好", "重新开始", "一切顺利", "好梦", "享受当下", "未来是我", "这就是我"]
             }
         ];
 
-        // --- 变量初始化 ---
         let camera, scene, renderer, controls;
         let raycaster, mouse;
         let hoveredCard = null;
@@ -90,179 +92,180 @@
             const container = document.getElementById('canvas-container');
             document.getElementById('loading').style.display = 'none';
 
-            // 1. 场景与相机
+            // 1. 场景
             scene = new THREE.Scene();
-            // 使用雾化效果增加深邃感
-            scene.fog = new THREE.FogExp2(0x000000, 0.0008);
+            // 雾化效果调淡一点，防止远处卡片太黑
+            scene.fog = new THREE.FogExp2(0x000000, 0.0005);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
-            camera.position.set(0, 0, 1200);
+            camera.position.set(0, 0, 1300);
 
-            // 2. 灯光 (营造氛围)
-            const ambientLight = new THREE.AmbientLight(0x555555);
+            // 2. 灯光修复 (解决画面灰暗的核心)
+            // 环境光：纯白，高强度
+            const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
             scene.add(ambientLight);
-            // 添加几个彩色的点光源来照亮卡片
-            const light1 = new THREE.PointLight(0xff00ff, 2, 2000);
+            
+            // 补光：增加几个强光源
+            const light1 = new THREE.PointLight(0xffffff, 3, 2000);
             light1.position.set(500, 500, 500);
             scene.add(light1);
-            const light2 = new THREE.PointLight(0x00ffff, 2, 2000);
-            light2.position.set(-500, -500, 500);
+            
+            const light2 = new THREE.PointLight(0x4444ff, 5, 2000); // 蓝色轮廓光
+            light2.position.set(-500, -500, 800);
             scene.add(light2);
 
             // 3. 渲染器
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // 开启透明度排序，这对半透明物体很重要
-            renderer.sortObjects = true;
+            // 开启色调映射，让发光不至于过曝
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            renderer.toneMappingExposure = 1.2;
             container.appendChild(renderer.domElement);
 
-            // 4. 控制器 (可选，允许用户旋转视角)
+            // 4. 控制器
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.autoRotate = true;
-            controls.autoRotateSpeed = 0.2;
-            controls.maxDistance = 2000;
-            controls.minDistance = 200;
+            controls.autoRotateSpeed = 0.3;
+            controls.enablePan = false;
 
-            // 5. 交互初始化
+            // 5. 交互
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
             window.addEventListener('mousemove', onMouseMove);
             window.addEventListener('resize', onWindowResize);
 
-            // --- 创建场景内容 ---
+            // 内容
             createStarField();
             createAllCards();
         }
 
-        // --- 创建星空背景 ---
         function createStarField() {
             const geometry = new THREE.BufferGeometry();
             const vertices = [];
-            for (let i = 0; i < 3000; i++) {
+            for (let i = 0; i < 4000; i++) {
                 vertices.push(
-                    THREE.MathUtils.randFloatSpread(4000),
-                    THREE.MathUtils.randFloatSpread(4000),
-                    THREE.MathUtils.randFloatSpread(4000)
+                    THREE.MathUtils.randFloatSpread(5000),
+                    THREE.MathUtils.randFloatSpread(5000),
+                    THREE.MathUtils.randFloatSpread(5000)
                 );
             }
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-            const material = new THREE.PointsMaterial({ color: 0xffffff, size: 2, transparent: true, opacity: 0.8 });
+            // 星星也调亮
+            const material = new THREE.PointsMaterial({ color: 0xffffff, size: 2.5, transparent: true, opacity: 0.9 });
             const stars = new THREE.Points(geometry, material);
             scene.add(stars);
             starParticles.push(stars);
         }
 
-        // --- 创建 Canvas 纹理卡片 (核心技术) ---
         function createCardTexture(text, colorStart, colorEnd) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            // 设置高分辨率以确保文字清晰
             canvas.width = 512;
             canvas.height = 256;
 
-            // 创建渐变背景
             const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
             gradient.addColorStop(0, colorStart);
             gradient.addColorStop(1, colorEnd);
 
-            // 绘制半透明圆角矩形背景
+            // 修复：背景透明度从 0.4 提高到 0.85，颜色更实
             ctx.fillStyle = gradient;
-            ctx.globalAlpha = 0.4; // 背景半透明
+            ctx.globalAlpha = 0.85; 
+            
+            // 绘制圆角矩形
             roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 40, true, false);
 
             // 绘制文字
             ctx.globalAlpha = 1.0;
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 70px "Microsoft YaHei"';
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 80px "Microsoft YaHei"'; // 字体加大
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            // 添加文字阴影增加立体感
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 4;
-            ctx.shadowOffsetY = 4;
+            // 加强文字阴影
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 5;
             ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            // 边框高亮
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 5;
+            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 40, false, true);
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.needsUpdate = true;
             return texture;
         }
         
-        // 辅助函数：绘制圆角矩形
         function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
             if (typeof stroke === 'undefined') { stroke = true; }
             if (typeof radius === 'undefined') { radius = 5; }
-            if (typeof radius === 'number') { radius = {tl: radius, tr: radius, br: radius, bl: radius}; } else { var defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0}; for (var side in defaultRadius) { radius[side] = radius[side] || defaultRadius[side]; }}
             ctx.beginPath();
-            ctx.moveTo(x + radius.tl, y);
-            ctx.lineTo(x + width - radius.tr, y);
-            ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
-            ctx.lineTo(x + width, y + height - radius.br);
-            ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
-            ctx.lineTo(x + radius.bl, y + height);
-            ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
-            ctx.lineTo(x, y + radius.tl);
-            ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
             ctx.closePath();
             if (fill) { ctx.fill(); }
             if (stroke) { ctx.stroke(); }
         }
 
-        // --- 创建所有主题的卡片集群 ---
         function createAllCards() {
             themes.forEach(theme => {
                 for (let i = 0; i < config.cardCountPerTheme; i++) {
-                    // 随机选择一条语录
                     const text = theme.words[i % theme.words.length];
                     const texture = createCardTexture(text, theme.colorStart, theme.colorEnd);
 
-                    // 创建材质：使用 MeshPhysicalMaterial 获得更好的玻璃质感
+                    // 修复：使用 MeshPhysicalMaterial 并开启自发光 (Emissive)
                     const material = new THREE.MeshPhysicalMaterial({
                         map: texture,
                         transparent: true,
-                        opacity: 0.9,
                         side: THREE.DoubleSide,
+                        
+                        // 关键修复：让材质自己发光，不再依赖外部光照反射
+                        emissive: 0xffffff,      // 发光基色：白
+                        emissiveMap: texture,    // 纹理即发光贴图
+                        emissiveIntensity: 0.5,  // 基础亮度 (0.5 保证不黑)
+                        
+                        opacity: 1.0,            // 基础不透明度
                         metalness: 0.1,
-                        roughness: 0.2,
-                        clearcoat: 1.0, // 清漆层，增加反光
+                        roughness: 0.1,
+                        clearcoat: 1.0,          // 玻璃涂层
                         clearcoatRoughness: 0.1
                     });
 
-                    // 创建几何体 (宽高比要和 Canvas 一致，2:1)
                     const geometry = new THREE.PlaneGeometry(160, 80);
                     const card = new THREE.Mesh(geometry, material);
 
-                    // 在主题中心点附近生成随机位置 (球形分布)
-                    const radius = 250 + Math.random() * 200;
+                    // 随机分布
+                    const radius = 200 + Math.random() * 250;
                     const theta = Math.random() * Math.PI * 2;
                     const phi = Math.acos(2 * Math.random() - 1);
-                    const x = radius * Math.sin(phi) * Math.cos(theta);
-                    const y = radius * Math.sin(phi) * Math.sin(theta);
-                    const z = radius * Math.cos(phi);
-
+                    
                     card.position.set(
-                        theme.center.x + x,
-                        theme.center.y + y,
-                        theme.center.z + z
+                        theme.center.x + radius * Math.sin(phi) * Math.cos(theta),
+                        theme.center.y + radius * Math.sin(phi) * Math.sin(theta),
+                        theme.center.z + radius * Math.cos(phi)
                     );
 
-                    // 随机初始旋转，增加动感
-                    card.rotation.set(
-                        Math.random() * 0.5,
-                        Math.random() * 0.5,
-                        Math.random() * 0.5
-                    );
+                    card.lookAt(new THREE.Vector3(0,0,0)); // 初始朝向中心
+                    card.rotation.z = Math.random() * 0.5 - 0.25; // 稍微歪一点
 
-                    // 保存初始状态用于复原
+                    // 保存初始状态
                     card.userData.initialPosition = card.position.clone();
                     card.userData.initialRotation = card.rotation.clone();
                     card.userData.initialScale = card.scale.clone();
-                    // 用于浮动动画的随机参数
-                    card.userData.floatSpeed = 0.001 + Math.random() * 0.002;
-                    card.userData.floatOffset = Math.random() * Math.PI * 2;
+                    // 浮动参数
+                    card.userData.floatSpeed = 0.0005 + Math.random() * 0.001;
+                    card.userData.floatOffset = Math.random() * 100;
 
                     scene.add(card);
                     allCards.push(card);
@@ -270,9 +273,7 @@
             });
         }
 
-        // --- 交互事件处理 ---
         function onMouseMove(event) {
-            // 将鼠标位置归一化为 -1 到 +1
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         }
@@ -283,7 +284,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- 核心交互逻辑：射线检测与动画 ---
         function updateInteraction() {
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(allCards);
@@ -292,131 +292,98 @@
                 const targetCard = intersects[0].object;
 
                 if (hoveredCard !== targetCard) {
-                    // 如果之前的卡片存在，先复原它
                     if (hoveredCard) resetCard(hoveredCard);
-
-                    // 聚焦新卡片
                     hoveredCard = targetCard;
                     focusCard(hoveredCard);
-
-                    // 处理周围卡片的反馈
                     affectNeighbors(hoveredCard);
-                    // 暂停场景自动旋转，方便查看
-                    controls.autoRotate = false; 
+                    controls.autoRotate = false; // 悬停时停止自转
+                    document.body.style.cursor = 'pointer';
                 }
             } else {
-                // 鼠标移开空白处，复原所有卡片
                 if (hoveredCard) {
                     resetCard(hoveredCard);
                     resetNeighbors();
                     hoveredCard = null;
-                    // 恢复场景自动旋转
-                    controls.autoRotate = true; 
+                    controls.autoRotate = true;
+                    document.body.style.cursor = 'default';
                 }
             }
         }
 
-        // 聚焦动画 (使用 TWEEN)
         function focusCard(card) {
-            // 放大并面向相机
+            // 放大
             new TWEEN.Tween(card.scale)
                 .to({ x: config.hoverScale, y: config.hoverScale, z: config.hoverScale }, 300)
                 .easing(TWEEN.Easing.Back.Out)
                 .start();
             
-            // 增加亮度和不透明度
+            // 变亮 (提升自发光强度)
             new TWEEN.Tween(card.material)
-                .to({ opacity: 1.0, emissiveIntensity: 0.5 }, 300)
+                .to({ emissiveIntensity: 1.5 }, 300) // 悬停时变成 1.5 倍亮度，超亮！
                 .start();
-            // 设置自发光颜色为白色，让它看起来更亮
-            card.material.emissive.set(0xffffff);
 
-            // 慢慢转向相机
+            // 转向镜头
             const targetRotation = camera.rotation.clone();
-            new TWEEN.Tween(card.rotation)
-                .to({ x: targetRotation.x, y: targetRotation.y, z: targetRotation.z }, 500)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .start();
+            // 这里简单处理，让卡片大致朝向相机
+            card.lookAt(camera.position); 
         }
 
-        // 复原动画
         function resetCard(card) {
             new TWEEN.Tween(card.scale)
                 .to(card.userData.initialScale, 400)
                 .easing(TWEEN.Easing.Quadratic.InOut)
                 .start();
             
+            // 恢复基础亮度
             new TWEEN.Tween(card.material)
-                .to({ opacity: 0.9, emissiveIntensity: 0 }, 400)
+                .to({ emissiveIntensity: 0.5 }, 400) // 恢复到 0.5，而不是黑掉
                 .start();
-            card.material.emissive.set(0x000000);
              
-            // 复原旋转
+            // 恢复旋转
             new TWEEN.Tween(card.rotation)
                 .to({ x: card.userData.initialRotation.x, y: card.userData.initialRotation.y, z: card.userData.initialRotation.z }, 600)
-                 .easing(TWEEN.Easing.Quadratic.InOut)
                 .start();
         }
 
-        // 周围卡片反馈动画
         function affectNeighbors(centerCard) {
             allCards.forEach(card => {
                 if (card === centerCard) return;
+                const dist = card.position.distanceTo(centerCard.position);
+                if (dist < config.neighborRadius) {
+                    const dir = card.position.clone().sub(centerCard.position).normalize();
+                    const force = (config.neighborRadius - dist) * 0.8; 
+                    const targetPos = card.userData.initialPosition.clone().add(dir.multiplyScalar(force));
 
-                const distance = card.position.distanceTo(centerCard.position);
-                if (distance < config.neighborRadius) {
-                    // 计算推离方向向量
-                    const pushDir = card.position.clone().sub(centerCard.position).normalize();
-                    // 距离越近，推得越远
-                    const pushForce = (config.neighborRadius - distance) * 0.8; 
-                    const targetPos = card.userData.initialPosition.clone().add(pushDir.multiplyScalar(pushForce));
-
-                    // 稍微推开并变暗、变小
                     new TWEEN.Tween(card.position).to(targetPos, 400).easing(TWEEN.Easing.Cubic.Out).start();
-                    new TWEEN.Tween(card.material).to({ opacity: 0.5 }, 400).start();
-                    new TWEEN.Tween(card.scale).to({x:0.8, y:0.8, z:0.8}, 400).start();
+                    // 周围卡片变暗一点，突出主角
+                    new TWEEN.Tween(card.material).to({ opacity: 0.3, emissiveIntensity: 0.2 }, 400).start();
                 } else {
-                     // 超出范围的也稍微变暗，突出主体
-                     new TWEEN.Tween(card.material).to({ opacity: 0.6 }, 400).start();
+                     new TWEEN.Tween(card.material).to({ opacity: 0.8, emissiveIntensity: 0.3 }, 400).start();
                 }
             });
         }
 
-        // 复原所有周围卡片
         function resetNeighbors() {
             allCards.forEach(card => {
                 if (card === hoveredCard) return;
                 new TWEEN.Tween(card.position).to(card.userData.initialPosition, 600).easing(TWEEN.Easing.Cubic.InOut).start();
-                new TWEEN.Tween(card.material).to({ opacity: 0.9 }, 600).start();
-                 new TWEEN.Tween(card.scale).to(card.userData.initialScale, 600).start();
+                new TWEEN.Tween(card.material).to({ opacity: 1.0, emissiveIntensity: 0.5 }, 600).start();
             });
         }
 
-        // --- 动画循环 ---
         function animate() {
             requestAnimationFrame(animate);
-            
-            const time = Date.now();
-
-            // 1. 更新所有 TWEEN 动画
             TWEEN.update();
-
-            // 2. 更新交互状态
             updateInteraction();
-            
-            // 3. 控制器更新 (用于自动旋转)
             controls.update();
 
-            // 4. 环境动画：星空缓慢旋转
-            starParticles.forEach(p => {
-                p.rotation.y += 0.0002;
-            });
-
-            // 5. 卡片浮动动画 (仅在未被悬停时)
+            // 粒子和卡片漂浮
+            const time = Date.now();
+            starParticles.forEach(p => p.rotation.y += 0.0001);
+            
             allCards.forEach(card => {
                 if (card !== hoveredCard) {
-                    card.position.y += Math.sin(time * card.userData.floatSpeed + card.userData.floatOffset) * 0.2;
-                    card.rotation.z += Math.cos(time * card.userData.floatSpeed) * 0.0005;
+                    card.position.y += Math.sin(time * card.userData.floatSpeed + card.userData.floatOffset) * 0.1;
                 }
             });
 
